@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>MiniPress — Editor</title>
+<style>
+  :root{ --bg:#f4f4f8; --card:#ffffff; --accent:#2b6cb0; --muted:#666; }
+  *{ font-family:Arial, sans-serif; box-sizing:border-box; }
+  body{ margin:0; background:var(--bg); padding:20px; }
+  h1{ font-size:20px; margin:0 0 12px; }
+  .box{ background:var(--card); padding:16px; border-radius:8px; box-shadow:0 4px 12px rgba(0,0,0,0.08); }
+  .btn{ padding:8px 14px; border:none; cursor:pointer; border-radius:6px; }
+  .primary{ background:var(--accent); color:#fff; }
+  .ghost{ background:#fff; border:1px solid #ccc; color:#333; }
+  .flex{ display:flex; gap:10px; align-items:center; }
+  .title{ width:100%; padding:8px; font-size:16px; border:1px solid #ccc; border-radius:6px; }
+  #editor{ width:100%; min-height:240px; padding:10px; background:#fff; border-radius:6px; border:1px solid #ccc; overflow:auto; }
+  .post-list-item{ padding:10px; border:1px solid #ddd; border-radius:6px; margin-top:8px; cursor:pointer; }
+  .small{ color:var(--muted); font-size:12px; }
+  @media(max-width:720px){ .flex{ flex-wrap:wrap; } }
+</style>
+</head>
+<body>
+
+<div class="box">
+  <h1>MiniPress</h1>
+
+  <div class="flex">
+    <input id="title" class="title" placeholder="Título do post">
+    <button class="btn primary" id="save">Salvar</button>
+    <button class="btn ghost" id="newPost">Novo</button>
+  </div>
+
+  <div class="flex" style="margin-top:10px;">
+    <button class="btn ghost" onclick="format('bold')"><b>B</b></button>
+    <button class="btn ghost" onclick="format('italic')"><i>I</i></button>
+    <button class="btn ghost" onclick="formatHeader('h1')">H1</button>
+    <button class="btn ghost" onclick="formatHeader('h2')">H2</button>
+    <button class="btn ghost" onclick="insertImg()">Imagem</button>
+  </div>
+
+  <div id="editor" contenteditable="true">
+    Escreva seu conteúdo…
+  </div>
+
+  <h3 style="margin-top:20px;">Posts</h3>
+  <div id="list"></div>
+
+</div>
+
+<script>
+const KEY = "miniPressPosts";
+let posts = JSON.parse(localStorage.getItem(KEY) || "[]");
+let current = null;
+
+function saveStore(){
+  localStorage.setItem(KEY, JSON.stringify(posts));
+  renderList();
+}
+
+function format(cmd){ document.execCommand(cmd,false,null); }
+function formatHeader(h){ document.execCommand("formatBlock",false,h); }
+
+function insertImg(){
+  const url = prompt("URL da imagem");
+  if(url) document.execCommand("insertImage",false,url);
+}
+
+function renderList(){
+  const list = document.getElementById("list");
+  list.innerHTML="";
+  posts.forEach(p=>{
+    const d = document.createElement("div");
+    d.className="post-list-item";
+    d.innerHTML = `<b>${p.title}</b><br><span class="small">${new Date(p.time).toLocaleString()}</span>`;
+    d.onclick = ()=>load(p.id);
+    list.appendChild(d);
+  });
+}
+
+function load(id){
+  const p = posts.find(x=>x.id===id);
+  if(!p) return;
+  current = id;
+  document.getElementById("title").value = p.title;
+  document.getElementById("editor").innerHTML = p.content;
+}
+
+document.getElementById("save").onclick=()=>{
+  const title = document.getElementById("title").value.trim() || "Sem título";
+  const content = document.getElementById("editor").innerHTML;
+  const time = Date.now();
+  
+  if(current){
+    const p = posts.find(x=>x.id===current);
+    p.title = title;
+    p.content = content;
+    p.time = time;
+  } else {
+    posts.push({ id:"p"+Math.random().toString(36).slice(2), title, content, time });
+    current = posts[posts.length-1].id;
+  }
+  
+  saveStore();
+  alert("Salvo!");
+};
+
+document.getElementById("newPost").onclick=()=>{
+  current = null;
+  document.getElementById("title").value="";
+  document.getElementById("editor").innerHTML="Escreva seu conteúdo…";
+};
+
+renderList();
+</script>
+
+</body>
+</html>
